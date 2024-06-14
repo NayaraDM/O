@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#define PINO_CORRENTE A0
+#define PINO_TENSAO A1
+
+float lerCorrente() {
+    return (float)analogRead(PINO_CORRENTE);
+}
+
+float lerTensao() {
+    return (float)analogRead(PINO_TENSAO);
+}
+
+float calcularPotencia(float corrente, float tensao) {
+    return corrente * tensao;
+}
+
+void enviarEmail(float corrente, float tensao, float potencia) {
+    // Código para enviar e-mail utilizando a API do Gmail
+    // Substitua esta parte com o código real para enviar e-mail
+}
+
+int main() {
+    float corrente, tensao, potencia;
+    
+    pinMode(PINO_CORRENTE, INPUT);
+    pinMode(PINO_TENSAO, INPUT);
+    
+    while(1) {
+        corrente = lerCorrente();
+        tensao = lerTensao();
+        
+        potencia = calcularPotencia(corrente, tensao);
+        
+        printf("Corrente: %.2f A\n", corrente);
+        printf("Tensao: %.2f V\n", tensao);
+        printf("Potencia: %.2f W\n", potencia);
+        
+        enviarEmail(corrente, tensao, potencia);
+        
+        delay(1000); // 1 segundo
+    }
+    
+    return 0;
+}
