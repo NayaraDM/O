@@ -1,75 +1,38 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <curl/curl.h>
+import requests
+from bs4 import BeautifulSoup
+import time
 
-#define PINO_CORRENTE A0
-#define PINO_TENSAO A1
+#Bot do Telegram
+TOKEN = ''
 
-float lerCorrente() {
-    return (float)analogRead(PINO_CORRENTE);
-}
+# URL do Google News
+URL = 'https://news.google.com'
 
-float lerTensao() {
-    return (float)analogRead(PINO_TENSAO);
-}
+# Chat ID
+CHAT_ID = 'SEU_CHAT_ID_AQUI'
 
-float calcularPotencia(float corrente, float tensao) {
-    return corrente * tensao;
-}
-
-void enviarEmail(float corrente, float tensao, float potencia) {
-    CURL *curl;
-    CURLcode res = CURLE_OK;
-    struct curl_slist *recipients = NULL;
-    char payload[500];
-    snprintf(payload, sizeof(payload), "From: seu_email@gmail.com\n"
-                                        "To: destinatario@example.com\n"
-                                        "Subject: Medidor de Consumo de Energia\n\n"
-                                        "Corrente: %.2f A\n"
-                                        "Tensao: %.2f V\n"
-                                        "Potencia: %.2f W\n", corrente, tensao, potencia);
-
-    curl = curl_easy_init();
-    if(curl) {
-        curl_easy_setopt(curl, CURLOPT_USERNAME, "seu_email@gmail.com");
-        curl_easy_setopt(curl, CURLOPT_PASSWORD, "sua_senha");
-        curl_easy_setopt(curl, CURLOPT_URL, "smtps://smtp.gmail.com:587");
-        curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-        curl_easy_setopt(curl, CURLOPT_MAIL_FROM, "seu_email@gmail.com");
-        recipients = curl_slist_append(recipients, "destinatario@example.com");
-        curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
-        curl_easy_setopt(curl, CURLOPT_READDATA, payload);
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-        res = curl_easy_perform(curl);
-        if(res != CURLE_OK) {
-            fprintf(stderr, "Falha ao enviar e-mail: %s\n", curl_easy_strerror(res));
-        }
-        curl_slist_free_all(recipients);
-        curl_easy_cleanup(curl);
+def enviar_mensagem(mensagem):
+    url = f'https://api.telegram.org/bot{TOKEN}/sendMessage'
+    payload = {
+        'chat_id': CHAT_ID,
+        'text': mensagem
     }
-}
+    requests.post(url, data=payload)
 
-int main() {
-    float corrente, tensao, potencia;
-    
-    pinMode(PINO_CORRENTE, INPUT);
-    pinMode(PINO_TENSAO, INPUT);
-    
-    while(1) {
-        corrente = lerCorrente();
-        tensao = lerTensao();
+def monitorar_noticias():
+    while True:
+        resposta = requests.get(URL)
+        sopa = BeautifulSoup(resposta.text, 'html.parser')
+
         
-        potencia = calcularPotencia(corrente, tensao);
-        
-        printf("Corrente: %.2f A\n", corrente);
-        printf("Tensao: %.2f V\n", tensao);
-        printf("Potencia: %.2f W\n", potencia);
-        
-        enviarEmail(corrente, tensao, potencia);
-        
-        delay(1000); // 1 segundo
-    }
-    
-    return 0;
-}
+        noticias = sopa.find_all('h3')  # Exemplo de como encontrar títulos de notícias
+
+        for noticia in noticias:
+            titulo = noticia.get_text()
+            enviar_mensagem(titulo)
+
+        time.sleep(3600)  # Espera 1 hora antes de verificar novamente
+
+if __name__ == '__main__':
+    monitorar_noticias()
+   
